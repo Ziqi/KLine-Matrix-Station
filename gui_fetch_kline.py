@@ -129,7 +129,10 @@ class KlineDataFetcherGUI(ttk.Window):
         
         self.stock_list = []
         self.stock_dict = {} 
-        self.out_dir = Path("./gui_downloads")
+        
+        # Cross-directory absolute path resolution
+        base_path = Path(__file__).resolve().parent.parent
+        self.out_dir = base_path / "1-KLine-Extract" / "gui_downloads"
         self.out_dir.mkdir(parents=True, exist_ok=True)
         
         # 观察池队列 (Market Radar Pool)
@@ -156,8 +159,8 @@ class KlineDataFetcherGUI(ttk.Window):
         header_frame = tk.Frame(self, bg=self.c_bg, pady=15)
         header_frame.pack(fill=X, padx=20)
         
-        tk.Label(header_frame, text="全市场一分钟 K线数据清洗基站", font=self.font_title, fg=self.c_gold, bg=self.c_bg).pack(side=LEFT)
-        self.status_sign = tk.Label(header_frame, text="系统已离线", font=("Menlo", 16, "bold"), fg=self.c_gold_dim, bg=self.c_bg)
+        tk.Label(header_frame, text="全市场 1分钟K线数据下载器", font=self.font_title, fg=self.c_gold, bg=self.c_bg).pack(side=LEFT)
+        self.status_sign = tk.Label(header_frame, text="系统就绪", font=("Menlo", 16, "bold"), fg=self.c_gold_dim, bg=self.c_bg)
         self.status_sign.pack(side=RIGHT, anchor=S)
 
         # --- BODY ---
@@ -170,7 +173,7 @@ class KlineDataFetcherGUI(ttk.Window):
         left_panel.pack_propagate(False)
         
         # 0. Market Radar Pool (观察池)
-        radar_lf = DashFrame(left_panel, title=" [ 市场雷达 MARKET RADAR ] ", bg_color=self.c_bg, fg_color=self.c_gold, dash_color=self.c_gold_dim, font=("Menlo", 15, "bold"))
+        radar_lf = DashFrame(left_panel, title=" 股票待下载区 ", bg_color=self.c_bg, fg_color=self.c_gold, dash_color=self.c_gold_dim, font=("Menlo", 15, "bold"))
         radar_lf.pack(fill=X, pady=(0, 15))
         
         tk.Label(radar_lf.content, text="股票观察池 WATCHLIST (支持Shift多选/双向清除):", font=self.font_base, fg=self.c_gold_dim, bg=self.c_bg).pack(anchor=W, pady=(0, 5))
@@ -194,7 +197,7 @@ class KlineDataFetcherGUI(ttk.Window):
         ttk.Button(btn_frame, text="[ 批量剥离选中目标 ]", style="FlatGold.TButton", command=self.on_remove_from_pool).pack(side=RIGHT)
         
         # 1. Search Box (Minimal) -> INJECTION
-        search_lf = DashFrame(left_panel, title=" 目标注入 INJECTION ", bg_color=self.c_bg, fg_color=self.c_gold, dash_color=self.c_gold_dim, font=("Menlo", 15, "bold"))
+        search_lf = DashFrame(left_panel, title=" 操作面板 ", bg_color=self.c_bg, fg_color=self.c_gold, dash_color=self.c_gold_dim, font=("Menlo", 15, "bold"))
         search_lf.pack(fill=X, pady=(0, 15))
         
         # --- 模式一：极速检索 / 直接列队 ---
@@ -218,7 +221,7 @@ class KlineDataFetcherGUI(ttk.Window):
         batch_btn.pack(fill=X, pady=(5, 5))
         
         # 2. Date Range
-        date_lf = DashFrame(left_panel, title=" 提取边界 BOUNDS ", bg_color=self.c_bg, fg_color=self.c_gold, dash_color=self.c_gold_dim, font=("Menlo", 15, "bold"))
+        date_lf = DashFrame(left_panel, title=" 时间范围过滤 ", bg_color=self.c_bg, fg_color=self.c_gold, dash_color=self.c_gold_dim, font=("Menlo", 15, "bold"))
         date_lf.pack(fill=X, pady=(0, 15))
         
         self.all_history_var = tk.BooleanVar(value=False)
@@ -259,16 +262,16 @@ class KlineDataFetcherGUI(ttk.Window):
         self.end_d.pack(side=LEFT, padx=2)
         
         # 3. Action Controls
-        ctrl_lf = DashFrame(left_panel, title=" 终端核心 CORE ", bg_color=self.c_bg, fg_color=self.c_gold, dash_color=self.c_gold_dim, font=("Menlo", 15, "bold"))
+        ctrl_lf = DashFrame(left_panel, title=" 下载控制 ", bg_color=self.c_bg, fg_color=self.c_gold, dash_color=self.c_gold_dim, font=("Menlo", 15, "bold"))
         ctrl_lf.pack(fill=BOTH, expand=True)
 
-        self.start_btn = ttk.Button(ctrl_lf.content, text="授权提交数据提取", style="FlatGold.TButton", command=self.on_start_click)
+        self.start_btn = ttk.Button(ctrl_lf.content, text="开始下载数据", style="FlatGold.TButton", command=self.on_start_click)
         self.start_btn.pack(fill=X, pady=(5, 15), ipady=5)
         
         self.pause_btn = ttk.Button(ctrl_lf.content, text="挂起当前通道", style="FlatGold.TButton", command=self.on_pause_click, state=DISABLED)
         self.pause_btn.pack(fill=X, pady=(0, 15), ipady=5)
         
-        self.stop_btn = ttk.Button(ctrl_lf.content, text="安全截断与数据落盘", style="FlatRed.TButton", command=self.on_stop_click, state=DISABLED)
+        self.stop_btn = ttk.Button(ctrl_lf.content, text="停止下载", style="FlatRed.TButton", command=self.on_stop_click, state=DISABLED)
         self.stop_btn.pack(fill=X, pady=(0, 15), ipady=5)
 
         # --- RIGHT PANEL ---
@@ -276,37 +279,37 @@ class KlineDataFetcherGUI(ttk.Window):
         right_panel.pack(side=LEFT, fill=BOTH, expand=True)
         
         # 顶部的列表 Labelframe
-        assets_lf = DashFrame(right_panel, title=" 提取成功序列清单 ARCHIVE (选中按 Delete 销毁文件) ", bg_color=self.c_bg, fg_color=self.c_gold, dash_color=self.c_gold_dim, font=("Menlo", 15, "bold"))
+        assets_lf = DashFrame(right_panel, title=" 已下载 1分钟K线列表 (选中按 Delete 删除) ", bg_color=self.c_bg, fg_color=self.c_gold, dash_color=self.c_gold_dim, font=("Menlo", 15, "bold"))
         assets_lf.pack(fill=BOTH, expand=True, pady=(0, 20))
         
-        columns = ("name", "code", "start", "end", "open", "delete")
+        columns = ("name", "code", "start", "end", "size", "open", "delete")
         # 外套一个 Frame 限制 Tree 和 Scrollbar
         tree_container = tk.Frame(assets_lf.content, bg=self.c_bg)
         tree_container.pack(fill=BOTH, expand=True)
         
-        self.tree = ttk.Treeview(tree_container, columns=columns, show="headings", selectmode="browse")
+        self.tree = ttk.Treeview(tree_container, columns=columns, show="headings", selectmode="extended")
         self.tree.heading("name", text="股票名称")
         self.tree.heading("code", text="代码")
-        self.tree.heading("start", text="起始录入点")
-        self.tree.heading("end", text="收官录入点")
-        self.tree.heading("open", text="[ 定位 ]")
-        self.tree.heading("delete", text="[ 擦除 ]")
+        self.tree.heading("start", text="开始日期")
+        self.tree.heading("end", text="结束日期")
+        self.tree.heading("size", text="文件大小")
+        self.tree.heading("open", text="[ 打开 ]")
+        self.tree.heading("delete", text="[ 删除 ]")
         
-        self.tree.column("name", width=140, anchor=tk.W)
-        self.tree.column("code", width=120, anchor=tk.W)
-        self.tree.column("start", width=140, anchor=tk.CENTER)
-        self.tree.column("end", width=140, anchor=tk.CENTER)
-        self.tree.column("open", width=100, anchor=tk.CENTER)
-        self.tree.column("delete", width=100, anchor=tk.CENTER)
+        self.tree.column("name", width=120, anchor=tk.W)
+        self.tree.column("code", width=100, anchor=tk.W)
+        self.tree.column("start", width=100, anchor=tk.CENTER)
+        self.tree.column("end", width=100, anchor=tk.CENTER)
+        self.tree.column("size", width=100, anchor=tk.E)
+        self.tree.column("open", width=70, anchor=tk.CENTER)
+        self.tree.column("delete", width=70, anchor=tk.CENTER)
         
         # 使用 Hidden 滚动条
         tree_yscroll = ttk.Scrollbar(tree_container, orient=tk.VERTICAL, command=self.tree.yview, style="Hidden.Vertical.TScrollbar")
-        tree_xscroll = ttk.Scrollbar(tree_container, orient=tk.HORIZONTAL, command=self.tree.xview, style="Hidden.Horizontal.TScrollbar")
-        self.tree.configure(yscrollcommand=tree_yscroll.set, xscrollcommand=tree_xscroll.set)
+        self.tree.configure(yscrollcommand=tree_yscroll.set)
         
         self.tree.pack(side=LEFT, fill=BOTH, expand=True)
         bind_auto_scrollbar(tree_container, tree_yscroll, tk.RIGHT, tk.Y)
-        bind_auto_scrollbar(tree_container, tree_xscroll, tk.BOTTOM, tk.X)
         
         # Bindings for tree
         self.tree.bind('<ButtonRelease-1>', self.on_tree_click)
@@ -314,14 +317,14 @@ class KlineDataFetcherGUI(ttk.Window):
         self.tree.bind('<BackSpace>', self.on_delete_asset)
         
         # BOTTOM RIGHT: Console Stream
-        console_lf = DashFrame(right_panel, title=" 数据流控网络 MATRIX ", bg_color=self.c_bg, fg_color=self.c_gold, dash_color=self.c_gold_dim, font=("Menlo", 15, "bold"))
+        console_lf = DashFrame(right_panel, title=" 运行日志 ", bg_color=self.c_bg, fg_color=self.c_gold, dash_color=self.c_gold_dim, font=("Menlo", 15, "bold"))
         console_lf.pack(fill=BOTH, expand=True)
         
         # Fake progress bar in console style
         prog_frame = tk.Frame(console_lf.content, bg=self.c_bg)
         prog_frame.pack(fill=X, pady=(5, 5))
         
-        self.prog_lbl = tk.Label(prog_frame, text="待命：等待您的提权指令", font=self.font_base_lg, fg=self.c_gold, bg=self.c_bg)
+        self.prog_lbl = tk.Label(prog_frame, text="待命：准备下载", font=self.font_base_lg, fg=self.c_gold, bg=self.c_bg)
         self.prog_lbl.pack(anchor=W)
         
         prog_bar_border = tk.Frame(console_lf.content, bg=self.c_gold_dim, height=4)
@@ -582,15 +585,17 @@ class KlineDataFetcherGUI(ttk.Window):
                 
                 new_sel_iids = []
                 for f in files:
+                    size_kb = f.stat().st_size / 1024.0
+                    size_str = f"{size_kb:.1f} KB"
                     m = re.match(r"^(.*)_(.*)_1m_(\d{8})_to_(\d{8})\.csv$", f.name)
                     if m:
                         name, code, start_d, end_d = m.groups()
                         s_fmt = f"{start_d[:4]}-{start_d[4:6]}-{start_d[6:]}"
                         e_fmt = f"{end_d[:4]}-{end_d[4:6]}-{end_d[6:]}"
-                        item_id = self.tree.insert("", END, values=(name, code, s_fmt, e_fmt, "[->] 目录", "[x] 销毁"))
+                        item_id = self.tree.insert("", END, values=(name, code, s_fmt, e_fmt, size_str, "[ 打开 ]", "[ 删除 ]"))
                         self._file_mapping[item_id] = f.name
                     else:
-                        item_id = self.tree.insert("", END, values=(f.name, "N/A", "N/A", "N/A", "[->] 目录", "[x] 销毁"))
+                        item_id = self.tree.insert("", END, values=(f.name, "N/A", "N/A", "N/A", size_str, "[ 打开 ]", "[ 删除 ]"))
                         self._file_mapping[item_id] = f.name
                         
                     if f.name in sel_files:
@@ -613,10 +618,10 @@ class KlineDataFetcherGUI(ttk.Window):
             if not filename: return
             filepath = self.out_dir / filename
             
-            if col == '#5': # open
+            if col == '#6': # open
                 if filepath.exists():
                     os.system(f"open -R '{filepath.absolute()}'")
-            elif col == '#6': # delete
+            elif col == '#7': # delete
                 if messagebox.askyesno("清理确认", f"确定在本地磁盘彻底销毁以下资产吗？\n\n{filename}"):
                     try:
                         if filepath.exists():
@@ -629,19 +634,33 @@ class KlineDataFetcherGUI(ttk.Window):
     def on_delete_asset(self, event):
         selection = self.tree.selection()
         if not selection: return
-        iid = selection[0]
-        filename = getattr(self, '_file_mapping', {}).get(iid)
         
-        if filename:
-            filepath = self.out_dir / filename
-            if messagebox.askyesno("清理确认", f"确定在本地磁盘彻底销毁以下资产吗？\n\n{filename}"):
-                try:
-                    if filepath.exists():
-                        os.remove(filepath)
-                        self.log_msg(f"数据已物理销毁: {filename}")
-                        self.tree.delete(iid)
-                except Exception as e:
-                    messagebox.showerror("删除失败", str(e))
+        if len(selection) == 1:
+            iid = selection[0]
+            filename = getattr(self, '_file_mapping', {}).get(iid)
+            if filename:
+                filepath = self.out_dir / filename
+                if messagebox.askyesno("清理确认", f"确定删除文件吗？\n\n{filename}"):
+                    try:
+                        if filepath.exists():
+                            os.remove(filepath)
+                            self.log_msg(f"数据已物理销毁: {filename}")
+                            self.tree.delete(iid)
+                    except Exception as e:
+                        messagebox.showerror("删除失败", str(e))
+        else:
+            if messagebox.askyesno("批量清理确认", f"确定批量删除选中的 {len(selection)} 个文件吗？"):
+                for iid in selection:
+                    filename = getattr(self, '_file_mapping', {}).get(iid)
+                    if filename:
+                        filepath = self.out_dir / filename
+                        try:
+                            if filepath.exists():
+                                os.remove(filepath)
+                                self.tree.delete(iid)
+                        except Exception as e:
+                            self.log_msg(f"删除 {filename} 时失败: {str(e)}", "err")
+                self.log_msg(f"批量物理销毁完成")
 
     def toggle_dates(self):
         state = tk.DISABLED if self.all_history_var.get() else tk.NORMAL
