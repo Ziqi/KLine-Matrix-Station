@@ -10,7 +10,7 @@
 **KLine Matrix Station** 是一款专为量身定制、沉浸感拉满的桌面级 Python 爬虫与数据融合终端。以 **“Flat Dark Gold (极客暗金)”** 作为视觉核心，重塑了针对全市场股票 1 分钟级高频 K 线数据的批量拉取、规整落地流程，为后续输入 **Kronos** 等大语言/序列预训练模型打下坚实基础。
 
 ## Acknowledgements
-Designed for integration with time-series forecasting foundation models like **Chronos** ([@amazon-science/chronos-forecasting](https://github.com/amazon-science/chronos-forecasting)).
+Designed for integration with time-series forecasting foundation models like **Kronos** ([@shiyu-coder/Kronos](https://github.com/shiyu-coder/Kronos)).
 ### ✨ 核心黑科技
 - **[ 极客暗金 UI 交互 ]**：全局替换系统默认 UI，采用 Canvas 自绘的边界框，配备自动浮现避让式隐形滚动条，纯黑背景配以高饱暗金字符，呈现骇客帝国级的终端实操体验。
 - **[ 剪贴板闪电嗅探阵列 (Clipboard Sniffer) ]**：无需繁琐的输入，你可以直接在网文、研报中复制一段杂乱无章的文字，例如：“久立特材想买一点，兆易创新，兴发集团这几个，还有华鲁恒生，以及四川美丰”。按下嗅探按钮，基站内置的分析引擎将在一秒内提取出合法标的并挂载入多核列队。
