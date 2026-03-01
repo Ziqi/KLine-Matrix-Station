@@ -78,8 +78,8 @@ class KlineDataFetcherGUI(ttk.Window):
     def __init__(self):
         super().__init__(themename="cyborg")
         self.title("全市场一分钟K线历史数据抓取控制台")
-        self.geometry("1100x700")
-        self.minsize(1050, 650)
+        self.geometry("1100x860")
+        self.minsize(1050, 800)
         
         # 极简黑金主题色 (Flat Dark Gold)
         self.c_bg = "#080808"        # 终极深邃黑
@@ -94,7 +94,7 @@ class KlineDataFetcherGUI(ttk.Window):
         self.font_title = ("Menlo", 36, "bold")
         self.font_base = ("Menlo", 14)
         self.font_base_lg = ("Menlo", 16)
-        self.font_log = ("Menlo", 15)
+        self.font_log = ("Menlo", 13)
         
         # 覆盖 ttk 样式，实现极致扁平和去凸起化
         style = ttk.Style()
@@ -165,7 +165,7 @@ class KlineDataFetcherGUI(ttk.Window):
         body_frame.pack(fill=BOTH, expand=True, padx=20, pady=(0, 20))
         
         # --- LEFT PANEL: CONTROLS ---
-        left_panel = tk.Frame(body_frame, width=380, bg=self.c_bg)
+        left_panel = tk.Frame(body_frame, width=400, bg=self.c_bg)
         left_panel.pack(side=LEFT, fill=Y, padx=(0, 20))
         left_panel.pack_propagate(False)
         
@@ -173,11 +173,11 @@ class KlineDataFetcherGUI(ttk.Window):
         radar_lf = DashFrame(left_panel, title=" [ 市场雷达 MARKET RADAR ] ", bg_color=self.c_bg, fg_color=self.c_gold, dash_color=self.c_gold_dim, font=("Menlo", 15, "bold"))
         radar_lf.pack(fill=X, pady=(0, 15))
         
-        tk.Label(radar_lf.content, text="股票观察池 WATCHLIST (选中按 Delete 移除):", font=self.font_base, fg=self.c_gold_dim, bg=self.c_bg).pack(anchor=W, pady=(0, 5))
+        tk.Label(radar_lf.content, text="股票观察池 WATCHLIST (支持Shift多选/双向清除):", font=self.font_base, fg=self.c_gold_dim, bg=self.c_bg).pack(anchor=W, pady=(0, 5))
         
         pool_frame = tk.Frame(radar_lf.content, bg=self.c_panel)
         pool_frame.pack(fill=X)
-        self.pool_listbox = tk.Listbox(pool_frame, height=5, font=("Menlo", 14, "bold"), bg=self.c_panel, fg=self.c_gold, selectbackground="#2A2111", selectforeground=self.c_gold, borderwidth=0, highlightthickness=1, highlightbackground=self.c_gold_dim)
+        self.pool_listbox = tk.Listbox(pool_frame, height=5, font=("Menlo", 14, "bold"), bg=self.c_panel, fg=self.c_gold, selectbackground="#2A2111", selectforeground=self.c_gold, borderwidth=0, highlightthickness=1, highlightbackground=self.c_gold_dim, selectmode=EXTENDED)
         
         pl_scroll = ttk.Scrollbar(pool_frame, orient=tk.VERTICAL, command=self.pool_listbox.yview, style="Hidden.Vertical.TScrollbar")
         self.pool_listbox.configure(yscrollcommand=pl_scroll.set)
@@ -188,25 +188,34 @@ class KlineDataFetcherGUI(ttk.Window):
         self.pool_listbox.bind('<Delete>', self.on_remove_from_pool)
         self.pool_listbox.bind('<BackSpace>', self.on_remove_from_pool)
         
-        # 1. Search Box (Minimal)
-        search_lf = DashFrame(left_panel, title=" 目标检索 TARGET ", bg_color=self.c_bg, fg_color=self.c_gold, dash_color=self.c_gold_dim, font=("Menlo", 15, "bold"))
+        # 多选清除按键
+        btn_frame = tk.Frame(radar_lf.content, bg=self.c_bg)
+        btn_frame.pack(fill=X, pady=(8, 0))
+        ttk.Button(btn_frame, text="[ 批量剥离选中目标 ]", style="FlatGold.TButton", command=self.on_remove_from_pool).pack(side=RIGHT)
+        
+        # 1. Search Box (Minimal) -> INJECTION
+        search_lf = DashFrame(left_panel, title=" 目标注入 INJECTION ", bg_color=self.c_bg, fg_color=self.c_gold, dash_color=self.c_gold_dim, font=("Menlo", 15, "bold"))
         search_lf.pack(fill=X, pady=(0, 15))
         
-        tk.Label(search_lf.content, text="输入代码/全拼/首字母自动匹配单只标的\n(匹配后按回车键自动上屏):", justify=LEFT, font=self.font_base, fg=self.c_fg, bg=self.c_bg).pack(anchor=W, pady=(0, 5))
+        # --- 模式一：极速检索 / 直接列队 ---
+        txt1 = "[模式1] 手动检索与注入:\n支持单代码回车；\n或直接粘贴研报段落，按回车进行行内嗅探"
+        tk.Label(search_lf.content, text=txt1, justify=LEFT, font=self.font_base, fg=self.c_fg, bg=self.c_bg).pack(anchor=W, pady=(0, 5))
         self.search_var = tk.StringVar()
         self.search_var.trace("w", self.on_search_typing)
         
-        input_frame = tk.Frame(search_lf.content, bg=self.c_bg)
-        input_frame.pack(fill=X, pady=5)
-        self.search_entry = tk.Entry(input_frame, textvariable=self.search_var, font=("Menlo", 18, "bold"), bg=self.c_panel, fg=self.c_gold, insertbackground=self.c_gold, relief="flat", highlightthickness=1, highlightbackground=self.c_gold_dim)
-        self.search_entry.pack(side=LEFT, fill=X, expand=True)
+        self.search_entry = tk.Entry(search_lf.content, textvariable=self.search_var, font=("Menlo", 18, "bold"), bg=self.c_panel, fg=self.c_gold, insertbackground=self.c_gold, relief="flat", highlightthickness=1, highlightbackground=self.c_gold_dim)
+        self.search_entry.pack(fill=X, pady=(0, 2))
         self.search_entry.bind('<Return>', self.on_search_enter_hit)
         
-        batch_btn = ttk.Button(input_frame, text="剪贴板智能嗅探", width=14, style="FlatGold.TButton", command=self.on_batch_paste)
-        batch_btn.pack(side=RIGHT, padx=(10, 0))
-        
         self.match_label = tk.Label(search_lf.content, text="未检索到匹配的股票", font=self.font_base_lg, fg=self.c_gold_dim, bg=self.c_bg)
-        self.match_label.pack(anchor=W, pady=(5, 0))
+        self.match_label.pack(anchor=W, pady=(0, 12))
+        
+        # --- 模式二：剪贴板雷达嗅探 ---
+        txt2 = "[模式2] 系统全局剪贴板嗅探:\n无需粘贴，复制包含标的文本后\n直接点击下方雷达按钮"
+        tk.Label(search_lf.content, text=txt2, justify=LEFT, font=self.font_log, fg=self.c_fg, bg=self.c_bg).pack(anchor=W, pady=(0, 5))
+        
+        batch_btn = ttk.Button(search_lf.content, text="[ 呼叫剪贴板雷达嗅探 ]", padding=(0, 4), style="FlatGold.TButton", command=self.on_batch_paste)
+        batch_btn.pack(fill=X, pady=(5, 5))
         
         # 2. Date Range
         date_lf = DashFrame(left_panel, title=" 提取边界 BOUNDS ", bg_color=self.c_bg, fg_color=self.c_gold, dash_color=self.c_gold_dim, font=("Menlo", 15, "bold"))
@@ -334,10 +343,10 @@ class KlineDataFetcherGUI(ttk.Window):
         
         # 定义日志高亮 Tag (Markdown style)
         self.log_widget.tag_config("info", foreground=self.c_fg)
-        self.log_widget.tag_config("warn", foreground="#FF9800", font=("Menlo", 14, "bold"))
-        self.log_widget.tag_config("err", foreground=self.c_red, font=("Menlo", 14, "bold"))
-        self.log_widget.tag_config("succ", foreground=self.c_green, font=("Menlo", 14, "bold"))
-        self.log_widget.tag_config("sys", foreground=self.c_gold, font=("Menlo", 14, "bold"))
+        self.log_widget.tag_config("warn", foreground="#FF9800", font=("Menlo", 13, "bold"))
+        self.log_widget.tag_config("err", foreground=self.c_red, font=("Menlo", 13, "bold"))
+        self.log_widget.tag_config("succ", foreground=self.c_green, font=("Menlo", 13, "bold"))
+        self.log_widget.tag_config("sys", foreground=self.c_gold, font=("Menlo", 13, "bold"))
         
         self.log_widget.configure(state='disabled')
 
@@ -355,7 +364,7 @@ class KlineDataFetcherGUI(ttk.Window):
             return
             
         if not hasattr(self, 'stock_list') or len(self.stock_list) == 0:
-            self.match_label.config(text="[-] 核心库就绪中，请稍候...", fg=self.c_red)
+            self.match_label.config(text="[-] 核心库为空(远端断网或未就绪)，无法支持联想匹配", fg=self.c_red)
             self._temp_match = None
             return
             
@@ -385,7 +394,9 @@ class KlineDataFetcherGUI(ttk.Window):
         return True
 
     def on_search_enter_hit(self, event):
-        """当用户在输入框按回车时，将暂存命中的标的装填进雷达观察池中，并清空输入"""
+        """当用户在输入框按回车时，将暂存命中的标的装填进雷达观察池中，或触发长文本的多点打散"""
+        val = self.search_var.get().strip()
+        
         if hasattr(self, '_temp_match') and self._temp_match:
             item = self._temp_match
             # 查重
@@ -401,13 +412,23 @@ class KlineDataFetcherGUI(ttk.Window):
             # 清空输入装填下一发
             self.search_var.set("")
             self.search_entry.focus_set()
+        else:
+            # 没有构成精准匹配，尝试行内无差别批量段落嗅探
+            if len(val) > 6 or ',' in val or '，' in val or ' ' in val:
+                self.log_msg(f"[*] 侦测到非常规输入矩阵，自适应转入[行内文本模糊嗅探引擎]进行分解处理...")
+                self.on_batch_paste(direct_text=val)
+                self.search_var.set("")
+                self.search_entry.focus_set()
             
-    def on_batch_paste(self):
-        try:
-            text = self.clipboard_get()
-        except:
-            messagebox.showwarning("剪贴板空", "未能在系统剪贴板中检测到可读的文本数据。")
-            return
+    def on_batch_paste(self, direct_text=None):
+        if direct_text is not None:
+            text = direct_text
+        else:
+            try:
+                text = self.clipboard_get()
+            except:
+                messagebox.showwarning("剪贴板空", "未能在系统剪贴板中检测到可读的文本数据。")
+                return
             
         if not text.strip(): return
         
@@ -522,13 +543,17 @@ class KlineDataFetcherGUI(ttk.Window):
         for i, item in enumerate(self.radar_pool):
             self.pool_listbox.insert(END, f" [{i+1}] {item['display']}")
 
-    def on_remove_from_pool(self, event):
+    def on_remove_from_pool(self, event=None):
         sel = self.pool_listbox.curselection()
         if not sel: return
-        idx = sel[0]
-        removed_item = self.radar_pool.pop(idx)
+        
+        removed_names = []
+        for idx in sorted(sel, reverse=True):
+            removed_item = self.radar_pool.pop(idx)
+            removed_names.append(removed_item['display'].split(" ")[0])
+            
         self._update_pool_ui()
-        self.log_msg(f"[-] 目标已从雷达池中剥离: {removed_item['display']}")
+        self.log_msg(f"[-] 目标已从雷达池中批量剥离 ({len(removed_names)}只): {', '.join(removed_names)}")
 
     def poll_downloads_dir(self):
         """Auto checks local dir and updates the Treeview with parsed data."""
@@ -725,6 +750,7 @@ class KlineDataFetcherGUI(ttk.Window):
         self.fetch_thread.start()
 
     def _run_batch_with_catch(self, queue, start_date, end_date):
+        import random
         total_tasks = len(queue)
         try:
             for idx, item in enumerate(queue):
@@ -743,7 +769,10 @@ class KlineDataFetcherGUI(ttk.Window):
                 if self.stop_requested:
                     break
                     
-                time.sleep(1) # 单标的完成间歇防刷保护
+                # 拟人化间歇防限流
+                delay = random.uniform(1.5, 4.0)
+                self.after(0, lambda d=delay: self.log_msg(f"[*] 跨标的冷却保护: 拟人化随机休眠 {d:.1f} 秒以避开风控..."))
+                time.sleep(delay)
                 
         except Exception as e:
             self.after(0, lambda err=e: self.__fetch_done(f"[-] 宏观致命异常阻塞了列队系统: {str(err)}", "err"))
@@ -817,31 +846,62 @@ class KlineDataFetcherGUI(ttk.Window):
         
         frames, curr_days_done = [], 0
 
+        import random
         for w0, w1 in self.iter_windows(start_dt, end_dt, window_days=7):
             while self.is_paused and not self.stop_requested: time.sleep(0.5)
             if self.stop_requested: break
             
-            try:
-                r = requests.get(MIANA_KLINE_URL, params={
-                    "token": MIANA_TOKEN, "symbol": symbol, "type": "1min", "order": "ASC",
-                    "beginDate": w0.strftime("%Y-%m-%d %H:%M:%S"),
-                    "endDate": w1.strftime("%Y-%m-%d %H:%M:%S"),
-                    "fq": "qfq", "format": "json", "limit": "2000"
-                }, timeout=10)
-                data_rows = r.json().get("data", [])
-                if r.json().get("code") == 200 and data_rows:
-                    frames.append(pd.DataFrame(data_rows))
-                    st, en = data_rows[0].get('date', ''), data_rows[-1].get('date', '')
-                    self.after(0, lambda ct=len(data_rows), d1=st, d2=en: self.log_msg(f"[+] 下行包校验通过: [{d1} -> {d2}] 收拢 {ct} 条实体数据"))
-                else:
-                    pass # Silently skip null zones to keep console clean
-            except Exception as e:
-                self.after(0, lambda err=e: self.log_msg(f"[!] 网络流波动产生重试拦截机制: {str(err)}"))
+            retry_count = 0
+            max_retries = 3
+            success_fetch = False
             
+            while retry_count < max_retries and not self.stop_requested:
+                try:
+                    r = requests.get(MIANA_KLINE_URL, params={
+                        "token": MIANA_TOKEN, "symbol": symbol, "type": "1min", "order": "ASC",
+                        "beginDate": w0.strftime("%Y-%m-%d %H:%M:%S"),
+                        "endDate": w1.strftime("%Y-%m-%d %H:%M:%S"),
+                        "fq": "qfq", "format": "json", "limit": "2000"
+                    }, timeout=10)
+                    
+                    if r.status_code != 200:
+                        if r.status_code in [429, 502, 503, 504]:
+                            retry_count += 1
+                            backoff = (2 ** retry_count) + random.uniform(0.5, 2.0)
+                            self.after(0, lambda rc=retry_count, sc=r.status_code, b=backoff: self.log_msg(f"[!] 触发远端限流风控 (HTTP {sc})，启用第 {rc} 次指数退避 (深度休眠 {b:.1f}s)...", "warn"))
+                            time.sleep(backoff)
+                            continue
+                        else:
+                            raise Exception(f"行情网关拒绝访问 (HTTP {r.status_code})，异常拦截机制生效。")
+    
+                    data_rows = r.json().get("data", [])
+                    if r.json().get("code") == 200 and data_rows:
+                        frames.append(pd.DataFrame(data_rows))
+                        st, en = data_rows[0].get('date', ''), data_rows[-1].get('date', '')
+                        self.after(0, lambda ct=len(data_rows), d1=st, d2=en: self.log_msg(f"[+] 下行包校验通过: [{d1} -> {d2}] 收拢 {ct} 条实体数据"))
+                    else:
+                        pass # Silently skip null zones
+                        
+                    success_fetch = True
+                    break
+                except requests.exceptions.Timeout:
+                    retry_count += 1
+                    b = (2 ** retry_count) + random.uniform(0.5, 2.0)
+                    self.after(0, lambda rc=retry_count, b=b: self.log_msg(f"[!] 远端下行丢包超时，启用第 {rc} 次指数退避 (深度休眠 {b:.1f}s)...", "warn"))
+                    time.sleep(b)
+                except Exception as e:
+                    self.after(0, lambda err=e: self.log_msg(f"[!] 发现致命网络穿透异常: {str(err)}", "err"))
+                    break
+            
+            if not success_fetch and retry_count >= max_retries:
+                self.after(0, lambda: self.log_msg("[x] 连续重试被拒，当前切片防反扒机制失败，抛弃并向后推进游标...", "err"))
+                
             curr_days_done += 7
             pct = min(100, int((curr_days_done / total_days) * 100))
             self.after(0, lambda p=pct: self.set_progress(p))
-            time.sleep(0.05)
+            
+            # 单次切片安全冷却
+            time.sleep(random.uniform(0.2, 0.6))
 
         if not frames:
             self.after(0, lambda: self.log_msg(f"[!] 警告：请求的时空中未发现 {stock_name} [{symbol}] 的任何K线实体数据", "warn"))
